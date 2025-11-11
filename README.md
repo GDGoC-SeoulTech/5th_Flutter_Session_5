@@ -1,13 +1,15 @@
-### App Session 2주차
+### App Session 5주차
 ![GDGoC Header](resources/gdgoc_header.png)
-> 담당 Core: 임도협
+> 담당 Core: 정동영
 
-## 이번 주에는
-- Flutter 프로젝트 구조 이해하기
-- `StatefulWidget`과 상태 관리 맛보기
-- 첫 UI 그려보기
+## 이번 시간 학습 목표
 
-[main.dart](pokemon/lib/main.dart)를 열어 시작해주세요!
+이번 세션에서는 **더 풍부한 포켓몬 정보**를 표시하기 위해 앱을 확장합니다.
+
+### 추가되는 기능
+1. **타입 배지**: 포켓몬의 타입(불꽃, 물, 풀 등)을 색상 있는 배지로 표시
+2. **능력치 게이지**: HP, Attack, Defense, Speed를 프로그레스 바로 시각화
+3. **성능 최적화**: API 요청을 병렬 처리하여 로딩 속도 개선
 
 <br />
 
