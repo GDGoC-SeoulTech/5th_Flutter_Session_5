@@ -13,4 +13,4 @@
 
 <br />
 
-<img width="350" alt="Simulator Screenshot - iPhone 17 - 2025-09-27 at 01 05 18" src="https://github.com/user-attachments/assets/2f6bd65a-7b82-4c87-a5ee-e2c39062729b" />
+<img width="350" src="./resources/스크린샷 2025-11-11 오후 4.47.28.png" />
