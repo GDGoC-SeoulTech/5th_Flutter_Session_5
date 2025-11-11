@@ -20,31 +20,100 @@ class PokemonApi {
     final data = json.decode(response.body);
     final results = data['results'] as List;
 
-    List<Pokemon> pokemons = [];
-
-    for (var i = 0; i < results.length; i++) {
+    // 병렬 처리: 모든 포켓몬 정보를 동시에 요청
+    final futures = List.generate(results.length, (i) async {
       final enName = results[i]['name'];
       final id = i + 1;
       final imageUrl =
           "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$id.png";
-      final speciesUrl = "https://pokeapi.co/api/v2/pokemon-species/${i + 1}";
-      final speciesRes = await http.get(Uri.parse(speciesUrl));
 
-      String koName = enName;
-      if (speciesRes.statusCode == 200) {
-        final speciesData = json.decode(speciesRes.body);
-        final names = speciesData['names'] as List;
-        final koEntry = names.firstWhere(
-          (n) => n['language']['name'] == 'ko',
-          orElse: () => {"name": enName},
+      try {
+        // 개별 포켓몬 API와 species API를 동시에 요청
+        final pokemonUrl = "https://pokeapi.co/api/v2/pokemon/$id";
+        final speciesUrl = "https://pokeapi.co/api/v2/pokemon-species/$id";
+
+        // Future.wait: 두 요청을 병렬로 실행
+        final responses = await Future.wait([
+          http.get(Uri.parse(pokemonUrl)),
+          http.get(Uri.parse(speciesUrl)),
+        ]);
+
+        final pokemonRes = responses[0];
+        final speciesRes = responses[1];
+
+        // 타입과 능력치 추출
+        List<String> types = [];
+        List<PokemonStat> stats = [];
+        if (pokemonRes.statusCode == 200) {
+          final pokemonData = json.decode(pokemonRes.body);
+
+          // 타입 추출
+          final typesData = pokemonData['types'] as List;
+          types = typesData.map((t) => t['type']['name'] as String).toList();
+
+          // 능력치 추출
+          final statsData = pokemonData['stats'] as List;
+          stats = statsData
+              .map((s) {
+                final statName = s['stat']['name'] as String;
+                final baseStat = s['base_stat'] as int;
+                // 능력치 이름 변환 (hp, attack, defense, speed만)
+                String displayName;
+                switch (statName) {
+                  case 'hp':
+                    displayName = 'HP';
+                    break;
+                  case 'attack':
+                    displayName = 'Attack';
+                    break;
+                  case 'defense':
+                    displayName = 'Defense';
+                    break;
+                  case 'speed':
+                    displayName = 'Speed';
+                    break;
+                  default:
+                    return null; // special-attack, special-defense는 제외
+                }
+                return PokemonStat(name: displayName, value: baseStat);
+              })
+              .whereType<PokemonStat>()
+              .toList();
+        }
+
+        // 한글 이름 가져오기
+        String koName = enName;
+        if (speciesRes.statusCode == 200) {
+          final speciesData = json.decode(speciesRes.body);
+          final names = speciesData['names'] as List;
+          final koEntry = names.firstWhere(
+            (n) => n['language']['name'] == 'ko',
+            orElse: () => {"name": enName},
+          );
+          koName = koEntry['name'];
+        }
+
+        return Pokemon(
+          id: id,
+          nameEn: enName,
+          nameKo: koName,
+          imageUrl: imageUrl,
+          types: types,
+          stats: stats,
         );
-        koName = koEntry['name'];
+      } catch (e) {
+        // 에러 발생 시 기본 데이터 반환
+        return Pokemon(
+          id: id,
+          nameEn: enName,
+          nameKo: enName,
+          imageUrl: imageUrl,
+        );
       }
+    });
 
-      pokemons.add(
-        Pokemon(id: id, nameEn: enName, nameKo: koName, imageUrl: imageUrl),
-      );
-    }
+    // 모든 Future가 완료될 때까지 대기 (병렬 실행)
+    final pokemons = await Future.wait(futures);
 
     return pokemons;
   }
